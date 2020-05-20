@@ -45,6 +45,7 @@ With the Facade `Daparto` you can call these methods:
 - Daparto::getXMLOrdersCached (same like getXMLOrders, but fetch data from cache)
 - Daparto::getDistinctShippingDescr (for debugging: unique list of shipping-description within all orders)
 - Daparto::getDistinctPaymentDescr (for debugging: unique list of payment-description within all orders)
+- Daparto::setDone($xmlFileName) (moves file to 'done')
 
 **NOTICE:** using "getXMLOrders" without cache, flushes the whole cache for your CUSTOMER1  
 in case you want to flush the cache manually: `Cache::tags('daparto.CUSTOMER1')->flush();` 
