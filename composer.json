@@ -1,0 +1,54 @@
+{
+    "name": "macropage/laravel-daparto",
+    "description": "Help working with Daparto",
+    "keywords": [
+        "macropage",
+        "laravel",
+        "daparto"
+    ],
+    "homepage": "https://github.com/macropage/laravel-daparto",
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "micha",
+            "email": "mbladowski@macropage.de",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^7.4",
+        "macropage/xml-to-php-array": "dev-master"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^4.0",
+        "phpunit/phpunit": "^8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "macropage\\laravel_daparto\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "macropage\\laravel_daparto\\Tests\\": "tests"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "macropage\\laravel_daparto\\DapartoServiveProvider"
+            ],
+            "aliases": {
+                "Daparto": "macropage\\laravel_daparto\\Facades\\Daparto"
+            }
+        }
+    }
+}
