@@ -29,11 +29,6 @@
             "macropage\\laravel_daparto\\": "src"
         }
     },
-    "autoload-dev": {
-        "psr-4": {
-            "macropage\\laravel_daparto\\Tests\\": "tests"
-        }
-    },
     "scripts": {
         "test": "vendor/bin/phpunit",
         "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
