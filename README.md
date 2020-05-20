@@ -8,7 +8,7 @@ You can install the package via composer:
 composer require macropage/laravel-daparto
 ```
 
-Publish config & migration using `php artisan vendor:publish --provider="macropage\laravel_daparto\DapartoServiveProvider"`  
+Publish config using `php artisan vendor:publish --provider="macropage\laravel_daparto\DapartoServiveProvider"`  
 
 Update your config `config/daparto.php`
 ```php
