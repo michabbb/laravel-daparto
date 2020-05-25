@@ -127,7 +127,7 @@ class daparto {
          */
         $remoteContents = Storage::disk('ftp.' . $this->customer . '.orders')->listContents();
         // filter only files and only take order from within this year
-        $onlyFiles = array_filter($remoteContents, fn($var) => (($var['type'] === 'file') && (stripos($var['filename'], 'ORDER_20-') !== false)));
+        $onlyFiles = array_filter($remoteContents, fn($var) => ($var['type'] === 'file'));
         // https://github.com/thephpleague/flysystem/issues/1161
         foreach ($onlyFiles as $i => $file) {
             $timestamp = Storage::disk('ftp.' . $this->customer . '.orders')->getTimestamp($file['path']);
