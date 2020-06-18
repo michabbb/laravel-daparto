@@ -134,8 +134,11 @@ class daparto {
         $onlyFiles = array_filter($remoteContents, fn($var) => ($var['type'] === 'file'));
         // https://github.com/thephpleague/flysystem/issues/1161
         foreach ($onlyFiles as $i => $file) {
-            // $timestamp = Storage::disk('ftp.' . $this->customer . '.orders')->getTimestamp($file['path']);
-            $timestamp = $file['timestamp'];
+            if (array_key_exists('timestamp',$file)) {
+                $timestamp = $file['timestamp'];
+            } else {
+                $timestamp = Storage::disk('ftp.' . $this->customer . '.orders')->getTimestamp($file['path']);
+            }
             if ($timestamp) {
                 $onlyFiles[$i]['timestamp'] = $timestamp;
             } else {
