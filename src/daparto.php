@@ -7,6 +7,7 @@ use Cache;
 use Exception;
 use Gaarf\XmlToPhp\Convertor;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
+use Illuminate\Filesystem\FilesystemAdapter;
 use RuntimeException;
 use Storage;
 use XMLReader;
@@ -125,12 +126,16 @@ class daparto {
         /**
          * Get Files if not existent in cache
          */
-        $remoteContents = Storage::disk('ftp.' . $this->customer . '.orders')->listContents();
+        /** @var FilesystemAdapter $adapter */
+        $adapter = Storage::disk('ftp.' . $this->customer . '.orders');
+        $adapter->getDriver()->getAdapter()->setEnableTimestampsOnUnixListings(true);
+        $remoteContents = $adapter->listContents();
         // filter only files and only take order from within this year
         $onlyFiles = array_filter($remoteContents, fn($var) => ($var['type'] === 'file'));
         // https://github.com/thephpleague/flysystem/issues/1161
         foreach ($onlyFiles as $i => $file) {
-            $timestamp = Storage::disk('ftp.' . $this->customer . '.orders')->getTimestamp($file['path']);
+            // $timestamp = Storage::disk('ftp.' . $this->customer . '.orders')->getTimestamp($file['path']);
+            $timestamp = $file['timestamp'];
             if ($timestamp) {
                 $onlyFiles[$i]['timestamp'] = $timestamp;
             } else {
