@@ -7,7 +7,10 @@ use Cache;
 use Exception;
 use Gaarf\XmlToPhp\Convertor;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
-use Illuminate\Filesystem\FilesystemAdapter;
+use League\Csv\CannotInsertRecord;
+use League\Csv\EncloseField;
+use League\Csv\Exception as CsVException;
+use League\Csv\Writer;
 use RuntimeException;
 use Storage;
 use XMLReader;
@@ -30,6 +33,7 @@ class daparto {
         $this->customer       = $customer;
         $this->customerConfig = config('daparto.accounts.' . $customer);
         config(['filesystems.disks.ftp.' . $customer . '.orders' => $this->customerConfig['orders']['ftp']]);
+        config(['filesystems.disks.ftp.' . $customer . '.shippinginfo' => $this->customerConfig['shippinginfo']['ftp']]);
     }
 
     public function getDistinctShippingDescr($Orders): array {
@@ -109,6 +113,24 @@ class daparto {
     }
 
     /**
+     * @param $order_number
+     * @param $carrier
+     * @param $shipping_number
+     *
+     * @return bool|string
+     * @throws CannotInsertRecord
+     * @throws CsVException
+     */
+    public function uploadShippingData($order_number, $carrier, $shipping_number) {
+        $csv = Writer::createFromString('');
+        $csv->setDelimiter(';');
+        EncloseField::addTo($csv, "\t\x1f");
+        $csv->insertOne(['order_number', 'delivery_type', 'tracking_number']);
+        $csv->insertOne([$order_number, $carrier, $shipping_number]);
+        return Storage::disk('ftp.' . $this->customer . '.shippinginfo')->put($order_number.'.csv',$csv->getContent());
+    }
+
+    /**
      * @param bool $useCache
      *
      * @return array
@@ -126,7 +148,6 @@ class daparto {
         /**
          * Get Files if not existent in cache
          */
-        /** @var FilesystemAdapter $adapter */
         $adapter = Storage::disk('ftp.' . $this->customer . '.orders');
         $adapter->getDriver()->getAdapter()->setEnableTimestampsOnUnixListings(true);
         $remoteContents = $adapter->listContents();
