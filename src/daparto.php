@@ -156,6 +156,7 @@ class daparto {
         while ($redo<10) {
             try {
                 $remoteContents = $adapter->listContents();
+                $redo=10;
             } catch (ConnectionRuntimeException $e) {
                 $redo++;
                 if ($redo>10) {
