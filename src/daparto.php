@@ -7,6 +7,7 @@ use Cache;
 use Exception;
 use Gaarf\XmlToPhp\Convertor;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
+use JetBrains\PhpStorm\Pure;
 use League\Csv\CannotInsertRecord;
 use League\Csv\EncloseField;
 use League\Csv\Exception as CsVException;
@@ -23,7 +24,7 @@ class daparto {
     private XMLReader        $xmlReader;
 
 
-    public function __construct() {
+    #[Pure] public function __construct() {
         $this->xmlReader = new XMLReader();
     }
 
@@ -83,15 +84,9 @@ class daparto {
     }
 
     /**
-     * @param      $orderId
-     *
-     * @param bool $useCache
-     *
-     * @return array|bool|mixed[]
      * @throws FileNotFoundException
      */
-    public
-    function getSingleXMLOrder($orderId, $useCache = false) {
+    public function getSingleXMLOrder(string $orderId, bool $useCache = false): array {
         $OrderFileName = 'ORDER_' . $orderId . '.xml';
 
         if ($useCache) {
@@ -122,7 +117,8 @@ class daparto {
      * @throws CannotInsertRecord
      * @throws CsVException
      */
-    public function uploadShippingData($order_number, $carrier, $shipping_number) {
+    public function uploadShippingData(string $order_number, string $carrier, string $shipping_number): bool|string
+    {
         $csv = Writer::createFromString('');
         $csv->setDelimiter(';');
         EncloseField::addTo($csv, "\t\x1f");
@@ -206,7 +202,8 @@ class daparto {
 
     }
 
-    private function checkXMLisValid(string $string) {
+    private function checkXMLisValid(string $string): bool
+    {
         $this->xmlReader->XML($string);
         $this->xmlReader->setParserProperty(XMLReader::VALIDATE, true);
 
