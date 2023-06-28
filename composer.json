@@ -17,14 +17,14 @@
         }
     ],
     "require": {
-        "php": "^8.0 || ^8.1",
+        "php": "^8.2",
         "macropage/xml-to-php-array": "dev-master",
         "league/csv": "^9.7",
         "ext-xmlreader": "*"
     },
     "require-dev": {
-        "orchestra/testbench": "^4.0",
-        "phpunit/phpunit": "^8.0"
+        "orchestra/testbench": "8.0",
+        "phpunit/phpunit": "^10.0"
     },
     "autoload": {
         "psr-4": {

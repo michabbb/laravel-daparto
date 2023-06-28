@@ -12,7 +12,8 @@ use League\Csv\CannotInsertRecord;
 use League\Csv\EncloseField;
 use League\Csv\Exception as CsVException;
 use League\Csv\Writer;
-use League\Flysystem\ConnectionRuntimeException;
+use League\Flysystem\FileAttributes;
+use League\Flysystem\FilesystemException;
 use RuntimeException;
 use Storage;
 use XMLReader;
@@ -41,7 +42,7 @@ class daparto {
     public function getDistinctShippingDescr($Orders): array {
         $existingShippings = [];
         foreach ($Orders as $order) {
-            $shipping                                                        = Arr::first(data_get($order, 'ORDER_ITEM_LIST.ORDER_ITEM'), fn($value, $key) => ($value['LINE_ITEM_ID'] === 'shipping'));
+            $shipping                                                        = Arr::first(data_get($order, 'ORDER_ITEM_LIST.ORDER_ITEM'), static fn($value, $key) => ($value['LINE_ITEM_ID'] === 'shipping'));
             $existingShippings[$shipping['ARTICLE_ID']['DESCRIPTION_SHORT']] = 1;
         }
 
@@ -51,7 +52,7 @@ class daparto {
     public function getDistinctPaymentDescr($Orders): array {
         $existingPayments = [];
         foreach ($Orders as $order) {
-            $shipping                                                       = Arr::first(data_get($order, 'ORDER_ITEM_LIST.ORDER_ITEM'), fn($value, $key) => ($value['LINE_ITEM_ID'] === 'payment'));
+            $shipping                                                       = Arr::first(data_get($order, 'ORDER_ITEM_LIST.ORDER_ITEM'), static fn($value, $key) => ($value['LINE_ITEM_ID'] === 'payment'));
             $existingPayments[$shipping['ARTICLE_ID']['DESCRIPTION_SHORT']] = 1;
         }
 
@@ -79,7 +80,8 @@ class daparto {
         return $xmlOrders;
     }
 
-    public function setDone($orderIdXML) {
+    public function setDone($orderIdXML): bool
+    {
         return Storage::disk('ftp.' . $this->customer . '.orders')->move($orderIdXML, 'done/'.$orderIdXML);
     }
 
@@ -133,6 +135,7 @@ class daparto {
      * @return array
      * @throws FileNotFoundException
      * @throws Exception
+     * @throws FilesystemException
      */
     public function getXMLOrders(bool $useCache = false): array {
 
@@ -145,18 +148,17 @@ class daparto {
         /**
          * Get Files if not existent in cache
          */
-        $adapter = Storage::disk('ftp.' . $this->customer . '.orders');
-        $adapter->getDriver()->getAdapter()->setEnableTimestampsOnUnixListings(true);
+        $adapter = Storage::disk('ftp.' . $this->customer . '.orders')->getAdapter();
 
         $redo = 0;
         while ($redo<10) {
             try {
-                $remoteContents = $adapter->listContents();
+                $remoteContents = $adapter->listContents('.',false);
                 $redo=10;
-            } catch (ConnectionRuntimeException $e) {
+            } catch (FilesystemException $e) {
                 $redo++;
                 if ($redo>10) {
-                    throw new ConnectionRuntimeException($e);
+                    throw new $e;
                 }
 
                 echo 'connect failed: '.$this->customerConfig['orders']['ftp']['host'].' retry again in 10 seconds....'."\n";
@@ -164,38 +166,46 @@ class daparto {
             }
         }
 
+        if (!isset($remoteContents)) {
+            throw new RuntimeException('no files found on ftp server');
+        }
+
+        $remoteContents = iterator_to_array($remoteContents);
 
         // filter only files and only take order from within this year
-        $onlyFiles = array_filter($remoteContents, fn($var) => ($var['type'] === 'file'));
-        // https://github.com/thephpleague/flysystem/issues/1161
-        foreach ($onlyFiles as $i => $file) {
-            if (array_key_exists('timestamp',$file)) {
-                $timestamp = $file['timestamp'];
-            } else {
-                $timestamp = Storage::disk('ftp.' . $this->customer . '.orders')->getTimestamp($file['path']);
-            }
-            if ($timestamp) {
-                $onlyFiles[$i]['timestamp'] = $timestamp;
-            } else {
-                throw new RuntimeException('unable to get timestamp of: ' . $file['path']);
+        $onlyFiles = collect(array_filter($remoteContents, static fn($var) => ($var['type'] === 'file')))->map(fn(FileAttributes $item) => [
+            'path' => $item->path(),
+            'lastModified' => $item->lastModified()
+        ])->pluck('lastModified', 'path');
+
+        foreach ($onlyFiles as $file => $timestamp) {
+            if (!$timestamp) {
+                $timestamp = Storage::disk('ftp.' . $this->customer . '.orders')->lastModified($file['path']);
+                if ($timestamp) {
+                    $onlyFiles->put($file, $timestamp);
+                } else {
+                    throw new RuntimeException('unable to get timestamp of: ' . $file);
+                }
             }
         }
-        usort($onlyFiles, fn($a, $b) => $a['timestamp'] <=> $b['timestamp']);
+
+        $onlyFiles = $onlyFiles->sort(static fn($a, $b) => $a['lastModified'] <=> $b['lastModified']);
+
         Cache::tags(['daparto.' . $this->customer])->put('daparto.orders.' . $this->customer, $onlyFiles);
 
         /**
          * Parse Each XML to Array
          */
-        foreach ($onlyFiles as $file) {
-            $file_contents = Storage::disk('ftp.' . $this->customer . '.orders')->get($file['path']);
-            $OrderArray    = $this->xml2array($file_contents, $file['path']);
-            Cache::tags(['daparto.' . $this->customer])->put('daparto.orders.' . $this->customer . '.' . $file['path'], $OrderArray);
+        foreach ($onlyFiles->keys() as $file) {
+            $file_contents = Storage::disk('ftp.' . $this->customer . '.orders')->get($file);
+            $OrderArray    = $this->xml2array($file_contents, $file);
+            Cache::tags(['daparto.' . $this->customer])->put('daparto.orders.' . $this->customer . '.' . $file, $OrderArray);
         }
 
         $xmlOrders = [];
 
-        foreach ($onlyFiles as $file) {
-            $xmlOrders[$file['path']] = cache()->tags(['daparto.' . $this->customer])->get('daparto.orders.' . $this->customer . '.' . $file['path']);
+        foreach ($onlyFiles->keys() as $file) {
+            $xmlOrders[$file] = cache()->tags(['daparto.' . $this->customer])->get('daparto.orders.' . $this->customer . '.' . $file);
         }
 
         return $xmlOrders;
@@ -204,6 +214,7 @@ class daparto {
 
     private function checkXMLisValid(string $string): bool
     {
+        /** @noinspection StaticInvocationViaThisInspection */
         $this->xmlReader->XML($string);
         $this->xmlReader->setParserProperty(XMLReader::VALIDATE, true);
 
@@ -221,7 +232,7 @@ class daparto {
             throw new RuntimeException('xml invalid: ' . $filename);
         }
         $OrderArray = Convertor::covertToArray($xml);
-        if (!is_array($OrderArray)) {
+        if (!count($OrderArray)) {
             throw new RuntimeException('unable to convert to array: ' . $filename);
         }
         $OrderArray['source'] = $filename;
