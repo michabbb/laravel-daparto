@@ -28,7 +28,7 @@
     },
     "autoload": {
         "psr-4": {
-            "macropage\\laravel_daparto\\": "src"
+            "macropage\\laravel_daparto\\": "src/"
         }
     },
     "scripts": {
@@ -44,7 +44,7 @@
                 "macropage\\laravel_daparto\\DapartoServiveProvider"
             ],
             "aliases": {
-                "Daparto": "macropage\\laravel_daparto\\Facades\\Daparto"
+                "Daparto": "Daparto"
             }
         }
     }

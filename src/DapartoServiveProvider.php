@@ -17,7 +17,7 @@ class DapartoServiveProvider extends ServiceProvider {
      */
     public function register(): void {
         $this->mergeConfigFrom($this->configPath, 'daparto');
-        $this->app->singleton('daparto', fn() => new daparto());
+        $this->app->singleton('Daparto', fn() => new Daparto());
     }
 
     /**
