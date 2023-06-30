@@ -44,7 +44,7 @@
                 "macropage\\laravel_daparto\\DapartoServiveProvider"
             ],
             "aliases": {
-                "Daparto": "Daparto"
+                "Daparto": "macropage\\laravel_daparto\\Facades\\DapartoFacade"
             }
         }
     }

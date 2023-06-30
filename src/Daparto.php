@@ -18,14 +18,14 @@ use RuntimeException;
 use Storage;
 use XMLReader;
 
-class daparto {
+class Daparto {
 
     private array            $customerConfig;
     private string           $customer;
     private XMLReader        $xmlReader;
 
 
-    #[Pure] public function __construct() {
+    public function __construct() {
         $this->xmlReader = new XMLReader();
     }
 
