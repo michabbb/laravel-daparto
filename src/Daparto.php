@@ -189,7 +189,8 @@ class Daparto {
             }
         }
 
-        $onlyFiles = $onlyFiles->sort(static fn($a, $b) => $a['lastModified'] <=> $b['lastModified']);
+        // $onlyFiles = $onlyFiles->sort(static fn($a, $b) => $a['lastModified'] <=> $b['lastModified']);
+        $onlyFiles = $onlyFiles->sort(static fn($a, $b) => $a <=> $b);
 
         Cache::tags(['daparto.' . $this->customer])->put('daparto.orders.' . $this->customer, $onlyFiles);
 
