@@ -30,7 +30,7 @@ class Daparto {
     }
 
     public function setCustomerConfig(string $customer): void {
-        if (!config()->has('daparto.accounts.' . $customer)) {
+        if (!config()?->has('daparto.accounts.' . $customer)) {
             throw new RuntimeException('missing customer "' . $customer . '" in your darpato config');
         }
         $this->customer       = $customer;
